@@ -1,367 +1,171 @@
--- Blox Fruit Automation Script
--- Version 3.0 (Hoàn chỉnh)
--- Tác giả: [Your Name]
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Player = game:GetService("Players").LocalPlayer
+local Mouse = Player:GetMouse()
+local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
--- ==============================================
--- CẤU HÌNH HỆ THỐNG
--- ==============================================
-
--- Màu sắc giao diện
-local COLORS = {
-    BACKGROUND = Color3.fromRGB(30, 30, 40),
-    TAB_BACKGROUND = Color3.fromRGB(40, 40, 50),
-    CONTENT_BACKGROUND = Color3.fromRGB(35, 35, 45),
-    BUTTON_NORMAL = Color3.fromRGB(60, 60, 70),
-    BUTTON_ACTIVE = Color3.fromRGB(80, 120, 80),
-    BUTTON_SPECIAL = Color3.fromRGB(80, 80, 120),
-    TEXT = Color3.fromRGB(255, 255, 255),
-    TEXT_HIGHLIGHT = Color3.fromRGB(200, 200, 255),
-    TAB_ACTIVE = Color3.fromRGB(70, 70, 90),
-    TAB_INACTIVE = Color3.fromRGB(50, 50, 60)
-}
-
--- Dữ liệu game (cập nhật theo phiên bản hiện tại)
-local GAME_DATA = {
-    RACES = {"Human", "Skypiean", "Fishman", "Mink", "Cyborg"},
-    SEAS = {"First Sea", "Second Sea", "Third Sea"},
-    ISLANDS = {
-        ["First Sea"] = {"Starter Island", "Marine Fortress", "Sky Island", "Pirate Village", "Desert"},
-        ["Second Sea"] = {"Kingdom of Rose", "Usoap's Island", "Green Zone"},
-        ["Third Sea"] = {"Port Town", "Castle on the Sea", "Hydra Island"}
-    },
-    WEAPONS = {"Sword", "Melee", "Gun"},
-    DISTANCES = {"5", "10", "15", "20"},
-    SKILL_PRIORITIES = {"Z > X > C > V", "X > Z > C > V", "C > X > Z > V"},
-    MOBS = {
-        ["First Sea"] = {"Bandit", "Monkey", "Pirate"},
-        ["Second Sea"] = {"Snow Bandit", "Vampire", "Desert Officer"},
-        ["Third Sea"] = {"Sea Soldier", "Water Fighter", "Fishman Warrior"}
-    }
-}
-
--- Biến toàn cục
-local currentSea = "First Sea"
-local questMobName = "Bandit"
-local hiddenQuestLocations = {
-    Vector3.new(100, 50, 200),
-    Vector3.new(-150, 30, 300),
-    Vector3.new(200, 70, -100)
-}
-
-local raceQuests = {
-    Human = {
-        {npcName = "Human Master", location = Vector3.new(100, 0, 100), type = "kill", target = "Bandit", amount = 10},
-        {npcName = "Human Elder", location = Vector3.new(150, 0, 150), type = "collect", item = "Human Scroll", amount = 5}
-    },
-    Skypiean = {
-        {npcName = "Sky Guardian", location = Vector3.new(0, 500, 0), type = "kill", target = "Sky Bandit", amount = 15}
-    },
-    Fishman = {
-        {npcName = "Fishman King", location = Vector3.new(-300, -50, 200), type = "kill", target = "Pirate", amount = 20}
-    }
-}
-
-local islandLocations = {
-    ["First Sea"] = {
-        ["Starter Island"] = Vector3.new(100, 0, 100),
-        ["Marine Fortress"] = Vector3.new(-200, 0, 300)
-    },
-    ["Second Sea"] = {
-        ["Kingdom of Rose"] = Vector3.new(500, 0, 600)
-    }
-}
-
--- ==============================================
--- HỆ THỐNG GIAO DIỆN
--- ==============================================
-
--- Tạo main UI
+-- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local TabButtons = Instance.new("Frame")
-local UIListLayout = Instance.new("UIListLayout")
-local ContentFrame = Instance.new("Frame")
+local ToggleButton = Instance.new("TextButton")
 
-ScreenGui.Name = "BloxFruitAutomation"
-ScreenGui.Parent = PlayerGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = Player.PlayerGui
+ScreenGui.ResetOnSpawn = false
 
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = COLORS.BACKGROUND
-MainFrame.BackgroundTransparency = 0.1
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
-MainFrame.Size = UDim2.new(0.4, 0, 0.6, 0)
-MainFrame.Active = true
-MainFrame.Draggable = true
+ToggleButton.Size = UDim2.new(0, 200, 0, 50)
+ToggleButton.Position = UDim2.new(0.5, -100, 0, 10)
+ToggleButton.Text = "AUTO FARM: OFF"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+ToggleButton.Parent = ScreenGui
 
-TabButtons.Name = "TabButtons"
-TabButtons.Parent = MainFrame
-TabButtons.BackgroundColor3 = COLORS.TAB_BACKGROUND
-TabButtons.BackgroundTransparency = 0.1
-TabButtons.Size = UDim2.new(1, 0, 0.1, 0)
-
-UIListLayout.Parent = TabButtons
-UIListLayout.FillDirection = Enum.FillDirection.Horizontal
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundColor3 = COLORS.CONTENT_BACKGROUND
-ContentFrame.BackgroundTransparency = 0.1
-ContentFrame.Position = UDim2.new(0, 0, 0.1, 0)
-ContentFrame.Size = UDim2.new(1, 0, 0.9, 0)
-
--- Tạo các tab
-local tabs = {
-    "Auto Farm",
-    "Quest",
-    "Shop",
-    "Race",
-    "Up Fruit",
-    "Settings"
+-- Configuration
+local Settings = {
+    AutoFarm = false,
+    FlySpeed = 100,
+    RefreshRate = 5,
+    NPCRadius = 2000,
+    EnemyRefresh = 2
 }
 
-local currentTab = nil
-local tabButtons = {}
+-- State Management
+local Character
+local Humanoid
+local RootPart
+local CurrentQuest
+local NPCList = {}
+local EnemyList = {}
 
-local function createTabButton(name)
-    local button = Instance.new("TextButton")
-    button.Name = name .. "Tab"
-    button.Parent = TabButtons
-    button.BackgroundColor3 = COLORS.TAB_INACTIVE
-    button.BackgroundTransparency = 0.1
-    button.Size = UDim2.new(1/#tabs, 0, 1, 0)
-    button.Text = name
-    button.TextColor3 = COLORS.TEXT
-    button.TextSize = 14
-    button.Font = Enum.Font.GothamBold
-    
-    button.MouseButton1Click:Connect(function()
-        if currentTab then
-            currentTab.Visible = false
-            tabButtons[currentTab.Name:gsub("Content", "Tab")].BackgroundColor3 = COLORS.TAB_INACTIVE
-            tabButtons[currentTab.Name:gsub("Content", "Tab")].TextColor3 = COLORS.TEXT
-        end
-        currentTab = ContentFrame:FindFirstChild(name .. "Content")
-        if currentTab then
-            currentTab.Visible = true
-            button.BackgroundColor3 = COLORS.TAB_ACTIVE
-            button.TextColor3 = Color3.fromRGB(255, 255, 0)
-        end
-    end)
-    
-    tabButtons[name .. "Tab"] = button
-    return button
-end
-
-local function createTabContent(name)
-    local frame = Instance.new("Frame")
-    frame.Name = name .. "Content"
-    frame.Parent = ContentFrame
-    frame.BackgroundTransparency = 1
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.Visible = false
-    
-    return frame
-end
-
--- ==============================================
--- CÁC TAB CHỨC NĂNG
--- ==============================================
-
--- Auto Farm Tab
-local autoFarmTab = createTabContent("Auto Farm")
-local autoFarmScroll = Instance.new("ScrollingFrame")
-autoFarmScroll.Parent = autoFarmTab
-autoFarmScroll.Size = UDim2.new(1, 0, 1, 0)
-autoFarmScroll.CanvasSize = UDim2.new(0, 0, 2, 0)
-autoFarmScroll.ScrollBarThickness = 5
-
--- Toggle Auto Farm
-local toggleFarm = Instance.new("TextButton")
-toggleFarm.Parent = autoFarmScroll
-toggleFarm.Size = UDim2.new(0.9, 0, 0.08, 0)
-toggleFarm.Position = UDim2.new(0.05, 0, 0.02, 0)
-toggleFarm.Text = "Enable Auto Farm"
-toggleFarm.TextColor3 = COLORS.TEXT
-toggleFarm.BackgroundColor3 = COLORS.BUTTON_NORMAL
-toggleFarm.BackgroundTransparency = 0.1
-
-local farmEnabled = false
-toggleFarm.MouseButton1Click:Connect(function()
-    farmEnabled = not farmEnabled
-    toggleFarm.Text = farmEnabled and "Disable Auto Farm" or "Enable Auto Farm"
-    toggleFarm.BackgroundColor3 = farmEnabled and COLORS.BUTTON_ACTIVE or COLORS.BUTTON_NORMAL
-    
-    if farmEnabled then
-        spawn(function()
-            while farmEnabled and wait() do
-                autoFarmQuest()
-            end
-        end)
-    end
+-- Toggle Handler
+ToggleButton.MouseButton1Click:Connect(function()
+    Settings.AutoFarm = not Settings.AutoFarm
+    ToggleButton.Text = "AUTO FARM: " .. (Settings.AutoFarm and "ON" or "OFF")
+    ToggleButton.BackgroundColor3 = Settings.AutoFarm and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
 end)
 
--- [Các phần khác của UI được triển khai tương tự...]
-
--- ==============================================
--- HỆ THỐNG LOGIC CHÍNH
--- ==============================================
-
--- Utility Functions
-local function getCharacter()
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-end
-
-local function getHumanoid()
-    local character = getCharacter()
-    return character and character:FindFirstChildOfClass("Humanoid")
-end
-
-local function getRootPart()
-    local character = getCharacter()
-    return character and character:FindFirstChild("HumanoidRootPart")
-end
-
--- Combat System
-function attackWithWeapon(weaponType, target)
-    if not target or not target:FindFirstChild("HumanoidRootPart") then return end
+-- Character Handling
+local function SetupCharacter()
+    Character = Player.Character or Player.CharacterAdded:Wait()
+    Humanoid = Character:WaitForChild("Humanoid")
+    RootPart = Character:WaitForChild("HumanoidRootPart")
     
-    local tool
-    local character = getCharacter()
-    if character then
-        for _, item in ipairs(character:GetChildren()) do
-            if item:IsA("Tool") then
-                if weaponType == "Sword" and string.find(item.Name:lower(), "sword") then
-                    tool = item
-                    break
-                elseif weaponType == "Gun" and string.find(item.Name:lower(), "gun") then
-                    tool = item
-                    break
-                elseif weaponType == "Melee" then
-                    tool = item
-                    break
+    Humanoid.Died:Connect(function()
+        repeat wait() until Player.Character:FindFirstChild("Humanoid")
+        SetupCharacter()
+    end)
+end
+
+SetupCharacter()
+
+-- NPC/Enemy Updating
+local function UpdateNPCList()
+    NPCList = {}
+    for _, npc in ipairs(workspace.NPCs:GetChildren()) do
+        if npc:FindFirstChild("Quest") then
+            table.insert(NPCList, npc)
+        end
+    end
+end
+
+local function UpdateEnemyList()
+    EnemyList = {}
+    for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            table.insert(EnemyList, enemy)
+        end
+    end
+end
+
+-- Movement System
+local function FlyTo(targetCFrame)
+    if not RootPart or not targetCFrame then return end
+    local tweenInfo = TweenInfo.new(
+        (RootPart.Position - targetCFrame.Position).Magnitude / Settings.FlySpeed,
+        Enum.EasingStyle.Linear
+    )
+    
+    local tween = TweenService:Create(RootPart, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+-- Quest Logic
+local function GetClosestNPC()
+    UpdateNPCList()
+    local closestNPC, minDistance = nil, math.huge
+    
+    for _, npc in ipairs(NPCList) do
+        if npc.Quest.Level.Value <= Player.Level.Value then
+            local distance = (RootPart.Position - npc.HumanoidRootPart.Position).Magnitude
+            if distance < minDistance then
+                closestNPC = npc
+                minDistance = distance
+            end
+        end
+    end
+    return closestNPC
+end
+
+local function AcceptQuest(npc)
+    game:GetService("ReplicatedStorage").Events.QuestEvent:FireServer(npc)
+    CurrentQuest = npc.Quest
+end
+
+local function GetQuestEnemy()
+    UpdateEnemyList()
+    for _, enemy in ipairs(EnemyList) do
+        if enemy.Name == CurrentQuest.Target.Value then
+            return enemy
+        end
+    end
+end
+
+local function AttackEnemy(enemy)
+    repeat
+        if enemy and enemy:FindFirstChild("HumanoidRootPart") then
+            RootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            game:GetService("VirtualUser"):Button1Down(Vector2.new(), enemy.HumanoidRootPart.CFrame)
+        end
+        task.wait()
+    until not enemy or enemy.Humanoid.Health <= 0
+end
+
+-- Main Loop
+local function MainProcess()
+    while Settings.AutoFarm do
+        if not Humanoid or Humanoid.Health <= 0 then
+            repeat task.wait() until Humanoid.Health > 0
+        end
+        
+        -- Accept Quest
+        local npc = GetClosestNPC()
+        if npc then
+            FlyTo(npc.HumanoidRootPart.CFrame)
+            AcceptQuest(npc)
+        end
+        
+        -- Hunt Enemies
+        if CurrentQuest then
+            repeat
+                local enemy = GetQuestEnemy()
+                if enemy then
+                    FlyTo(enemy.HumanoidRootPart.CFrame)
+                    AttackEnemy(enemy)
                 end
-            end
+                task.wait(Settings.EnemyRefresh)
+            until CurrentQuest.Progress.Value >= CurrentQuest.Required.Value
         end
-    end
-    
-    if tool then
-        mouse1click()
+        
+        -- Complete Quest
+        if npc then
+            FlyTo(npc.HumanoidRootPart.CFrame)
+            game:GetService("ReplicatedStorage").Events.CompleteQuest:FireServer(npc)
+        end
+        
+        task.wait(Settings.RefreshRate)
     end
 end
 
--- [Các hàm hệ thống khác được triển khai đầy đủ...]
-
--- ==============================================
--- HỆ THỐNG SỰ KIỆN
--- ==============================================
-
--- Nút đóng/mở UI
-local toggleUI = Instance.new("TextButton")
-toggleUI.Name = "ToggleUI"
-toggleUI.Parent = ScreenGui
-toggleUI.BackgroundColor3 = COLORS.BUTTON_NORMAL
-toggleUI.BackgroundTransparency = 0.1
-toggleUI.Position = UDim2.new(0, 0, 0.5, 0)
-toggleUI.Size = UDim2.new(0.05, 0, 0.1, 0)
-toggleUI.Text = "Close"
-toggleUI.TextColor3 = COLORS.TEXT
-
-local uiVisible = true
-toggleUI.MouseButton1Click:Connect(function()
-    uiVisible = not uiVisible
-    MainFrame.Visible = uiVisible
-    toggleUI.Text = uiVisible and "Close" or "Open"
+-- Auto-Start
+RunService.Heartbeat:Connect(function()
+    if Settings.AutoFarm then
+        pcall(MainProcess)
+    end
 end)
-
--- Khởi tạo tab mặc định
-currentTab = autoFarmTab
-autoFarmTab.Visible = true
-tabButtons["Auto FarmTab"].BackgroundColor3 = COLORS.TAB_ACTIVE
-tabButtons["Auto FarmTab"].TextColor3 = Color3.fromRGB(255, 255, 0)
-
--- ==============================================
--- HỆ THỐNG INPUT
--- ==============================================
-
-function mouse1click()
-    pcall(function()
-        UserInputService:SendMouseButtonEvent(0, 0, 0, true, false, 0)
-        wait(0.1)
-        UserInputService:SendMouseButtonEvent(0, 0, 0, false, false, 0)
-    end)
-end
-
-function keypress(keyCode)
-    pcall(function()
-        UserInputService:SendKeyEvent(true, keyCode, false, nil)
-    end)
-end
-
-function keyrelease(keyCode)
-    pcall(function()
-        UserInputService:SendKeyEvent(false, keyCode, false, nil)
-    end)
-end
-
--- ==============================================
--- CÁC HÀM CHỨC NĂNG CHÍNH
--- ==============================================
-
-function autoFarmQuest()
-    local character = getCharacter()
-    local rootPart = getRootPart()
-    if not character or not rootPart then return end
-
-    -- Kiểm tra boss gần đó
-    if checkBossNearby() then
-        avoidBoss()
-        wait(3)
-        return
-    end
-
-    -- Nhận quest nếu chưa có
-    if not hasQuest() then
-        if getQuestFromNPC() then
-            wait(2)
-        else
-            wait(1)
-            return
-        end
-    end
-
-    -- Tìm và tấn công quái vật
-    local target = findNearestMob(questMobName)
-    if target and target:FindFirstChild("HumanoidRootPart") then
-        moveToTarget(target, tonumber(GAME_DATA.DISTANCES[selectedDistance]))
-        
-        if hakiEnabled then
-            useHaki()
-        end
-        
-        attackWithWeapon(GAME_DATA.WEAPONS[selectedWeapon], target)
-        
-        if auraEnabled then
-            gatherMobs()
-        end
-    else
-        wait(1)
-    end
-end
-
--- [Các hàm chức năng khác được triển khai đầy đủ...]
-
--- ==============================================
--- KHỞI CHẠY HỆ THỐNG
--- ==============================================
-
-print("Blox Fruit Automation Script đã sẵn sàng!")
