@@ -11,4 +11,4 @@ Script hỗ trợ chơi Blox Fruits với nhiều tính năng hữu ích.
 
 ## Cách sử dụng
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/username/BloxFruits-Script/main/bloxfruit.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/trungdienyb/BloxFruits-Script/main/bloxfruit.lua"))()
